@@ -30,6 +30,7 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.vkalyoncu.devface.watchkitapp
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        SKIP_INSTALL: NO   # XcodeGen defaults watchOS apps to YES, which leaves the archive empty
     dependencies:
       - target: DevFaceWidgets
   DevFaceWidgets:
