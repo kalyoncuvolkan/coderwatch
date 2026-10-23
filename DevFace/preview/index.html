@@ -1,0 +1,372 @@
+<title>DevFace Önizleme</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Geist:wght@400;500;600&display=swap">
+<style>
+  /* Layout: the watch is the hero on the left, controls and setup steps beside it; stacks on phones. */
+  :root {
+    color-scheme: dark;
+    --bg: #0d0f0e;
+    --panel: #151917;
+    --line: #26302b;
+    --fg: #e4ebe6;
+    --muted: #8a9a90;
+    --accent: #ff6a13;
+    --focus: #66d9ef;
+    --font-body: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  html, body { background: var(--bg); color: var(--fg); }
+  body {
+    font-family: var(--font-body);
+    font-size: 15px;
+    line-height: 1.55;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 28px 40px;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; display: grid; gap: 28px; }
+  header { display: grid; gap: 6px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 12px; color: var(--accent); letter-spacing: 0.04em; }
+  h1 { margin: 0; font-size: clamp(28px, 5vw, 40px); font-weight: 600; letter-spacing: -0.02em; text-wrap: balance; }
+  .lede { margin: 0; color: var(--muted); max-width: 62ch; }
+
+  .main { display: grid; grid-template-columns: minmax(0, 420px) minmax(0, 1fr); gap: 36px; align-items: start; }
+  @media (max-width: 760px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+  /* ---------- Watch ---------- */
+  .stage { display: flex; justify-content: center; }
+  .watch-box { position: relative; }
+  .watch { position: absolute; top: 0; left: 0; transform-origin: 0 0; width: 300px; padding: 0 22px 0 10px; }
+  .strap {
+    width: 168px; height: 54px; margin: 0 auto;
+    background: repeating-linear-gradient(90deg, #1b1f1c 0 6px, #202521 6px 12px);
+    border: 1px solid #2a302c;
+  }
+  .strap.top { border-radius: 10px 10px 0 0; border-bottom: none; }
+  .strap.bottom { border-radius: 0 0 10px 10px; border-top: none; }
+  .case {
+    position: relative;
+    padding: 15px;
+    border-radius: 50px;
+    background: linear-gradient(145deg, #c9c5bd 0%, #8e8a83 30%, #6f6c66 55%, #b3afa7 85%, #d6d2ca 100%);
+    box-shadow: 0 30px 60px rgba(0,0,0,0.55), inset 0 0 0 1px rgba(255,255,255,0.25);
+  }
+  .bezel { padding: 8px; border-radius: 37px; background: #050505; box-shadow: inset 0 0 0 1px #1a1a1a; }
+  .crown-guard {
+    position: absolute; right: -14px; top: 78px; width: 18px; height: 92px;
+    border-radius: 0 12px 12px 0;
+    background: linear-gradient(90deg, #8e8a83, #bdb9b1 60%, #7d7a74);
+  }
+  .crown {
+    position: absolute; right: -24px; top: 92px; width: 16px; height: 46px; border-radius: 4px;
+    background: repeating-linear-gradient(0deg, #6f6c66 0 2px, #b8b4ac 2px 4px);
+    border: 1px solid #5b5853; cursor: pointer; padding: 0;
+  }
+  .crown::after { content: ""; position: absolute; left: 4px; right: 4px; top: 50%; height: 6px; margin-top: -3px; background: var(--accent); border-radius: 2px; }
+  .side-btn { position: absolute; right: -8px; top: 196px; width: 8px; height: 50px; border-radius: 0 4px 4px 0; background: #8e8a83; }
+  .action-btn { position: absolute; left: -7px; top: 74px; width: 8px; height: 58px; border-radius: 4px 0 0 4px; background: var(--accent); }
+  .crown:focus-visible, .screen:focus-visible { outline: 2px solid var(--focus); outline-offset: 3px; }
+
+  .screen {
+    position: relative; width: 211px; height: 257px; border-radius: 32px; overflow: hidden;
+    background: #000; cursor: pointer;
+    --pri: #4dff73; --sec: #5c6b61; --kw: #4dff73; --str: #e6db74; --num: #66d9ef; --rain: #1fd15a;
+  }
+  .screen canvas { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0.28; }
+  .term {
+    position: absolute; inset: 0; padding: 0 10px;
+    display: flex; flex-direction: column; justify-content: center; gap: 3px;
+    font-family: var(--font-mono); font-size: 12px; line-height: 1.25; white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+  .l { overflow: hidden; }
+  .prompt { font-size: 10.5px; }
+  .kw { color: var(--kw); } .str { color: var(--str); } .num { color: var(--num); }
+  .sec { color: var(--sec); } .pri { color: var(--pri); } .w { color: #fff; }
+  .clock { display: flex; align-items: baseline; gap: 1px; margin: -2px 0; }
+  .hm { font-size: 49px; font-weight: 600; line-height: 1.05; color: var(--pri); text-shadow: 0 0 10px color-mix(in srgb, var(--pri) 55%, transparent); letter-spacing: -0.02em; }
+  .ss { font-size: 16px; font-weight: 500; color: var(--sec); }
+  .screen.aod .hm { text-shadow: none; }
+  .screen.aod .dim { opacity: 0.6; }
+  .screen.aod { filter: brightness(0.82); }
+
+  /* ---------- Controls ---------- */
+  .side { display: grid; gap: 22px; min-width: 0; }
+  .group { display: grid; gap: 10px; }
+  .label { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  button.chip {
+    font: 500 13px/1 var(--font-mono);
+    color: var(--fg); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 8px; padding: 9px 12px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px;
+  }
+  button.chip:hover { border-color: var(--muted); }
+  button.chip[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+  button.chip:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  .swatch { width: 10px; height: 10px; border-radius: 50%; }
+  .hint { margin: 0; font-size: 13px; color: var(--muted); }
+  .hint kbd { font-family: var(--font-mono); font-size: 12px; color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+
+  .steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; counter-reset: step; }
+  .steps li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; counter-increment: step; }
+  .steps li::before {
+    content: counter(step); font: 600 12px/26px var(--font-mono); text-align: center;
+    width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--line); color: var(--accent);
+  }
+  .steps p { margin: 2px 0 0; }
+  code { font-family: var(--font-mono); font-size: 12.5px; background: var(--panel); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; overflow-wrap: anywhere; }
+  .note { margin: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel); font-size: 13.5px; color: var(--muted); }
+  .note strong { color: var(--fg); font-weight: 600; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">watchOS · SwiftUI · Apple Watch Ultra 4</div>
+    <h1>DevFace</h1>
+    <p class="lede">Terminal görünümlü, animasyonlu saat ekranı. Her dakika yeni bir komut yazılıyor, rakamlar değişirken kısa bir "decrypt" efekti oynuyor, arkada hafif bir kod yağmuru akıyor.</p>
+  </header>
+
+  <div class="main">
+    <div class="stage">
+      <div class="watch-box" id="watchBox">
+        <div class="watch" id="watch">
+          <div class="strap top"></div>
+          <div class="case">
+            <div class="action-btn" title="Action Button"></div>
+            <div class="crown-guard"></div>
+            <button class="crown" id="crown" type="button" aria-label="Digital Crown: sonraki tema"></button>
+            <div class="side-btn"></div>
+            <div class="bezel">
+              <div class="screen" id="screen" tabindex="0" role="button" aria-label="Kod yağmurunu aç/kapat">
+                <canvas id="rain"></canvas>
+                <div class="term" aria-hidden="true">
+                  <div class="l prompt"><span class="kw">➜ </span><span class="num">~ </span><span class="sec">git:(</span><span class="str">main</span><span class="sec">) </span><span class="w" id="cmd"></span><span class="pri" id="cur">▌</span></div>
+                  <div class="l clock"><span class="hm" id="hm">00:00</span><span class="ss" id="ss">:00</span></div>
+                  <div class="l dim"><span class="kw">let </span><span class="w">today = </span><span class="str" id="dateS"></span></div>
+                  <div class="l" id="epochL"><span class="sec">epoch: </span><span class="num" id="epoch"></span></div>
+                  <div class="l dim"><span class="sec">day [</span><span class="pri" id="barF"></span><span class="sec" id="barE"></span><span class="sec">] </span><span class="num" id="pct"></span></div>
+                  <div class="l dim"><span class="sec">bat: </span><span class="num" id="bat">87%</span><span class="sec" id="wk"></span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="strap bottom"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="group">
+        <div class="label">TEMA · Digital Crown ile değişir</div>
+        <div class="chips" id="themes"></div>
+      </div>
+      <div class="group">
+        <div class="label">MOD</div>
+        <div class="chips">
+          <button class="chip" id="rainBtn" type="button" aria-pressed="true">code rain</button>
+          <button class="chip" id="aodBtn" type="button" aria-pressed="false">always-on</button>
+        </div>
+        <p class="hint">Saatte ekrana dokunmak kod yağmurunu açıp kapatır, kronu çevirmek temayı değiştirir. Burada ekrana tıkla ya da kronu kullan.</p>
+      </div>
+      <div class="group">
+        <div class="label">SAATE YÜKLEME</div>
+        <ol class="steps">
+          <li><p>App Store Connect'te Admin yetkili bir API anahtarı oluştur, değerleri GitHub secret'larına ekle. Mac gerekmez.</p></li>
+          <li><p>GitHub Actions'ta <code>setup</code>, ardından <code>beta</code> iş akışını çalıştır. Derleme bulutta yapılır ve TestFlight'a yüklenir. iPhone'daki TestFlight'tan saatine kur.</p></li>
+          <li><p>Saatte Ayarlar → Genel → Saate Dön → <strong>1 saat sonra</strong> seç. Böylece DevFace ekranda kalır, Always-On'da sade moda geçer.</p></li>
+          <li><p>Modular Ultra kadranına DevFace komplikasyonunu ekle, Action Button'a da "Uygulamayı Aç: DevFace" kestirmesi ata. Tek basışta geri gelir.</p></li>
+        </ol>
+      </div>
+      <p class="note"><strong>Bilmen gereken kısıt:</strong> Apple üçüncü parti saat kadranlarına izin vermiyor. DevFace bu yüzden kadran gibi davranan bir watchOS uygulaması ve sistem kadranlarına eklenen komplikasyonlar olarak yazıldı.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const THEMES = [
+    { id: "terminal", pri: "#4dff73", sec: "#5c6b61", kw: "#4dff73", str: "#e6db74", num: "#66d9ef", rain: "#1fd15a" },
+    { id: "ultra",    pri: "#ff6a13", sec: "#6b5b52", kw: "#ff6a13", str: "#ffc799", num: "#ffffff", rain: "#ff6a13" },
+    { id: "dracula",  pri: "#bd93f9", sec: "#6272a4", kw: "#ff79c6", str: "#f1fa8c", num: "#50fa7b", rain: "#bd93f9" },
+    { id: "night",    pri: "#ff2a1f", sec: "#6e1410", kw: "#ff2a1f", str: "#c41f17", num: "#ff2a1f", rain: "#a3150f" },
+  ];
+  const COMMANDS = ["now", "date +%R", "uptime", "git log -1", "whoami", "make time"];
+  const GLYPHS = Array.from("01{}[]()<>=;:/*+-&|!?$#@λ→");
+  const W = 211, H = 257, CELL = 11, TRAIL = 9;
+
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
+  };
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const state = {
+    theme: store.get("devface.theme", 0) % THEMES.length,
+    rain: store.get("devface.rain", !reduceMotion),
+    aod: false,
+    battery: 0.87,
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const screen = $("screen"), canvas = $("rain"), ctx = canvas.getContext("2d");
+
+  function noise(a, b = 0) {
+    let x = Math.imul(a | 0, 73856093) ^ Math.imul(b | 0, 19349663);
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    x = Math.imul(x ^ (x >>> 16), 0x45d9f3b);
+    x ^= x >>> 16;
+    return ((x >>> 0) % 10000) / 10000;
+  }
+  const pad = (n) => String(n).padStart(2, "0");
+  const hhmm = (d) => pad(d.getHours()) + ":" + pad(d.getMinutes());
+  const dateOpts = { weekday: "short", day: "numeric", month: "short" };
+  let dateFmt;
+  try { dateFmt = new Intl.DateTimeFormat(navigator.language, dateOpts); }
+  catch { dateFmt = new Intl.DateTimeFormat("tr-TR", dateOpts); }
+  function isoWeek(d) {
+    const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const day = t.getUTCDay() || 7;
+    t.setUTCDate(t.getUTCDate() + 4 - day);
+    const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+    return Math.ceil(((t - y0) / 86400000 + 1) / 7);
+  }
+
+  // ---------- Scale the watch to the available width ----------
+  const box = $("watchBox"), watch = $("watch");
+  function fit() {
+    const natW = watch.offsetWidth, natH = watch.offsetHeight;
+    const avail = Math.min(box.parentElement.clientWidth, 520);
+    const k = Math.min(1.45, avail / natW);
+    watch.style.transform = `scale(${k})`;
+    box.style.width = natW * k + "px";
+    box.style.height = natH * k + "px";
+    const ratio = (window.devicePixelRatio || 1) * k;
+    canvas.width = Math.round(W * ratio);
+    canvas.height = Math.round(H * ratio);
+    ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  }
+
+  // ---------- Theme + controls ----------
+  const themeBox = $("themes");
+  THEMES.forEach((t, i) => {
+    const b = document.createElement("button");
+    b.className = "chip"; b.type = "button"; b.id = "theme-" + t.id;
+    b.innerHTML = `<span class="swatch" style="background:${t.pri}"></span>${t.id}`;
+    b.addEventListener("click", () => setTheme(i));
+    themeBox.appendChild(b);
+  });
+  function setTheme(i) {
+    state.theme = (i + THEMES.length) % THEMES.length;
+    store.set("devface.theme", state.theme);
+    const t = THEMES[state.theme];
+    for (const k of ["pri", "sec", "kw", "str", "num", "rain"]) screen.style.setProperty("--" + k, t[k]);
+    themeBox.querySelectorAll("button").forEach((b, j) => b.setAttribute("aria-pressed", String(j === state.theme)));
+  }
+  function setRain(on) {
+    state.rain = on; store.set("devface.rain", on);
+    $("rainBtn").setAttribute("aria-pressed", String(on));
+    if (!on) ctx.clearRect(0, 0, W, H);
+  }
+  function setAod(on) {
+    state.aod = on;
+    $("aodBtn").setAttribute("aria-pressed", String(on));
+    screen.classList.toggle("aod", on);
+    if (on) ctx.clearRect(0, 0, W, H);
+  }
+  $("crown").addEventListener("click", () => setTheme(state.theme + 1));
+  $("crown").addEventListener("wheel", (e) => { e.preventDefault(); setTheme(state.theme + (e.deltaY > 0 ? 1 : -1)); }, { passive: false });
+  screen.addEventListener("click", () => setRain(!state.rain));
+  screen.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setRain(!state.rain); } });
+  $("rainBtn").addEventListener("click", () => setRain(!state.rain));
+  $("aodBtn").addEventListener("click", () => setAod(!state.aod));
+
+  try {
+    navigator.getBattery?.().then((b) => {
+      const upd = () => { state.battery = b.level; };
+      upd(); b.addEventListener("levelchange", upd);
+    }).catch(() => {});
+  } catch {}
+
+  // ---------- Rendering (mirrors TerminalClock.swift / CodeRainView.swift) ----------
+  function drawRain(t) {
+    ctx.clearRect(0, 0, W, H);
+    ctx.fillStyle = THEMES[state.theme].rain;
+    ctx.font = "500 9px " + getComputedStyle(document.documentElement).getPropertyValue("--font-mono");
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const cols = Math.floor(W / CELL), rows = Math.floor(H / CELL) + TRAIL;
+    for (let col = 0; col < cols; col++) {
+      if (noise(col, 1) <= 0.35) continue;
+      const speed = 3 + noise(col, 2) * 6;
+      const offset = noise(col, 3) * rows;
+      const head = Math.floor((t * speed + offset) % rows);
+      for (let i = 0; i < TRAIL; i++) {
+        const row = head - i;
+        if (row < 0) continue;
+        const y = row * CELL;
+        if (y >= H) continue;
+        const tick = Math.floor(t * (2 + noise(col, row) * 4));
+        const g = GLYPHS[Math.floor(noise(tick, col * 31 + row) * GLYPHS.length)];
+        ctx.globalAlpha = i === 0 ? 1 : 0.75 * (1 - i / TRAIL);
+        ctx.fillText(g, col * CELL + CELL / 2, y);
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function clockString(date, sec) {
+    const now = hhmm(date);
+    if (state.aod || sec >= 0.7) return now;
+    const prev = hhmm(new Date(date.getTime() - 60000));
+    const frame = Math.floor(date.getTime() / 50);
+    return Array.from(now).map((c, i) => {
+      const settled = sec > 0.25 + i * 0.1;
+      if (c === ":" || c === prev[i] || settled) return c;
+      return String(Math.floor(noise(frame, i) * 10));
+    }).join("");
+  }
+
+  let last = 0;
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    const interval = state.aod ? 1000 : reduceMotion ? 250 : 50;
+    if (ts - last < interval) return;
+    last = ts;
+
+    const date = new Date();
+    const sec = date.getSeconds() + date.getMilliseconds() / 1000;
+    const t = date.getTime() / 1000;
+
+    const cmd = COMMANDS[Math.floor(date.getTime() / 60000) % COMMANDS.length];
+    $("cmd").textContent = state.aod || reduceMotion ? cmd : cmd.slice(0, Math.floor(sec * 14));
+    $("cur").style.opacity = !state.aod && Math.floor(t * 2) % 2 === 0 ? 1 : 0;
+
+    $("hm").textContent = reduceMotion ? hhmm(date) : clockString(date, sec);
+    $("ss").textContent = state.aod ? "" : ":" + pad(date.getSeconds());
+    $("dateS").textContent = `"${dateFmt.format(date)}"`;
+    $("epochL").hidden = state.aod;
+    $("epoch").textContent = Math.floor(t);
+
+    const start = new Date(date); start.setHours(0, 0, 0, 0);
+    const frac = (date - start) / 86400000;
+    const filled = Math.min(10, Math.floor(frac * 10));
+    $("barF").textContent = "█".repeat(filled);
+    $("barE").textContent = "░".repeat(10 - filled);
+    $("pct").textContent = Math.floor(frac * 100) + "%";
+
+    const bat = $("bat");
+    bat.textContent = Math.round(state.battery * 100) + "%";
+    bat.style.color = state.battery < 0.2 ? "#ff453a" : "";
+    $("wk").textContent = "  // W" + isoWeek(date);
+
+    if (state.rain && !state.aod) drawRain(t);
+  }
+
+  setTheme(state.theme);
+  setRain(state.rain);
+  fit();
+  window.addEventListener("resize", fit);
+  document.fonts?.ready.then(fit);
+  requestAnimationFrame(frame);
+})();
+</script>

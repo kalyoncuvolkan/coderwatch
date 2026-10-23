@@ -1,0 +1,95 @@
+# Builds DevFace on a GitHub-hosted macOS runner and ships it to TestFlight.
+# No Mac needed: certificates and profiles are created through the App Store
+# Connect API and stored (encrypted with MATCH_PASSWORD) on the
+# `match-certificates` branch of this repository.
+#
+# Required environment (GitHub secrets): ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_P8,
+# TEAM_ID, MATCH_PASSWORD. GITHUB_TOKEN and GITHUB_REPOSITORY come from Actions.
+
+require "base64"
+
+default_platform(:ios)
+
+APP_ID = "com.vkalyoncu.devface.watchkitapp"
+WIDGET_ID = "#{APP_ID}.widgets"
+TARGETS = { "DevFace" => APP_ID, "DevFaceWidgets" => WIDGET_ID }.freeze
+PROJECT = "DevFace.xcodeproj"
+
+platform :ios do
+  desc "One-time: register bundle IDs and create the distribution certificate + profiles"
+  lane :setup do
+    setup_ci
+    key = asc_api_key
+    Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.from(hash: key)
+
+    { APP_ID => "DevFace", WIDGET_ID => "DevFace Widgets" }.each do |identifier, name|
+      if Spaceship::ConnectAPI::BundleId.find(identifier)
+        UI.message("Bundle ID #{identifier} already registered")
+      else
+        Spaceship::ConnectAPI::BundleId.create(
+          name: name,
+          platform: Spaceship::ConnectAPI::BundleIdPlatform::IOS,
+          identifier: identifier
+        )
+        UI.success("Registered bundle ID #{identifier}")
+      end
+    end
+
+    signing(key, readonly: false)
+  end
+
+  desc "Build the watch app and upload it to TestFlight"
+  lane :beta do
+    setup_ci
+    key = asc_api_key
+    signing(key, readonly: true)
+
+    sh("cd .. && xcodegen generate")
+
+    TARGETS.each do |target, identifier|
+      update_code_signing_settings(
+        path: PROJECT,
+        targets: [target],
+        use_automatic_signing: false,
+        team_id: ENV.fetch("TEAM_ID"),
+        bundle_identifier: identifier,
+        code_sign_identity: "Apple Distribution",
+        profile_name: "match AppStore #{identifier}"
+      )
+    end
+
+    build_app(
+      project: PROJECT,
+      scheme: "DevFace",
+      configuration: "Release",
+      export_method: "app-store",
+      xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', '1')}",
+      export_options: {
+        provisioningProfiles: TARGETS.values.to_h { |id| [id, "match AppStore #{id}"] }
+      }
+    )
+
+    upload_to_testflight(api_key: key, skip_waiting_for_build_processing: true)
+  end
+end
+
+def asc_api_key
+  app_store_connect_api_key(
+    key_id: ENV.fetch("ASC_KEY_ID"),
+    issuer_id: ENV.fetch("ASC_ISSUER_ID"),
+    key_content: ENV.fetch("ASC_KEY_P8")
+  )
+end
+
+def signing(key, readonly:)
+  match(
+    type: "appstore",
+    app_identifier: TARGETS.values,
+    api_key: key,
+    team_id: ENV.fetch("TEAM_ID"),
+    git_url: "https://github.com/#{ENV.fetch('GITHUB_REPOSITORY')}.git",
+    git_branch: "match-certificates",
+    git_basic_authorization: Base64.strict_encode64("x-access-token:#{ENV.fetch('GITHUB_TOKEN')}"),
+    readonly: readonly
+  )
+end
