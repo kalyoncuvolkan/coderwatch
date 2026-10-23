@@ -62,6 +62,7 @@ platform :ios do
       project: PROJECT,
       scheme: "DevFace",
       configuration: "Release",
+      destination: "generic/platform=watchOS", # gym defaults to iOS
       export_method: "app-store",
       xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', '1')}",
       export_options: {
