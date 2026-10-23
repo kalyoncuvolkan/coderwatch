@@ -56,7 +56,7 @@ Depo → **Settings → Secrets and variables → Actions → New repository sec
 
 **Actions → "DevFace → TestFlight" iş akışı → Run workflow → lane: `setup`**
 
-Bundle ID'leri (`com.vkalyoncu.devface.watchkitapp` ve `.widgets`) kaydeder, dağıtım
+Bundle ID'leri (`com.vkalyoncu.devface.watchkitapp`, `.watch` ve `.watch.widgets`) kaydeder, dağıtım
 sertifikasını ve App Store profillerini oluşturur. Yalnızca bir kez çalıştırman yeterli.
 
 ### 4. App Store Connect'te uygulama kaydı

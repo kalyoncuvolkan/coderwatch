@@ -10,9 +10,11 @@ require "base64"
 
 default_platform(:ios)
 
-APP_ID = "com.vkalyoncu.devface.watchkitapp"
-WIDGET_ID = "#{APP_ID}.widgets"
-TARGETS = { "DevFace" => APP_ID, "DevFaceWidgets" => WIDGET_ID }.freeze
+# The iOS container carries the App Store Connect record; see project.yml.
+CONTAINER_ID = "com.vkalyoncu.devface.watchkitapp"
+WATCH_ID = "#{CONTAINER_ID}.watch"
+WIDGET_ID = "#{WATCH_ID}.widgets"
+TARGETS = { "DevFace" => CONTAINER_ID, "DevFaceWatch" => WATCH_ID, "DevFaceWidgets" => WIDGET_ID }.freeze
 PROJECT = "DevFace.xcodeproj"
 
 platform :ios do
@@ -22,7 +24,7 @@ platform :ios do
     key = asc_api_key
     Spaceship::ConnectAPI.token = Spaceship::ConnectAPI::Token.from(hash: key)
 
-    { APP_ID => "DevFace", WIDGET_ID => "DevFace Widgets" }.each do |identifier, name|
+    { CONTAINER_ID => "DevFace", WATCH_ID => "DevFace Watch", WIDGET_ID => "DevFace Widgets" }.each do |identifier, name|
       if Spaceship::ConnectAPI::BundleId.find(identifier)
         UI.message("Bundle ID #{identifier} already registered")
       else
@@ -62,7 +64,6 @@ platform :ios do
       project: PROJECT,
       scheme: "DevFace",
       configuration: "Release",
-      destination: "generic/platform=watchOS", # gym defaults to iOS
       export_method: "app-store",
       xcargs: "CURRENT_PROJECT_VERSION=#{ENV.fetch('GITHUB_RUN_NUMBER', '1')}",
       export_options: {
