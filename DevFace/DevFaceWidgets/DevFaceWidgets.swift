@@ -1,3 +1,4 @@
+import AppIntents
 import SwiftUI
 import WidgetKit
 
@@ -69,6 +70,13 @@ struct DevFaceComplicationView: View {
 }
 
 @main
+struct DevFaceWidgetBundle: WidgetBundle {
+    var body: some Widget {
+        DevFaceWidget()
+        DevFaceControl()
+    }
+}
+
 struct DevFaceWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "DevFaceComplication", provider: DayProvider()) { entry in
@@ -78,5 +86,18 @@ struct DevFaceWidget: Widget {
         .configurationDisplayName("DevFace")
         .description("Terminal-style day progress. Tap to open DevFace.")
         .supportedFamilies([.accessoryCircular, .accessoryCorner, .accessoryInline, .accessoryRectangular])
+    }
+}
+
+/// One-tap "open DevFace" control for Control Center and the Ultra's Action Button.
+struct DevFaceControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "DevFaceControl") {
+            ControlWidgetButton(action: OpenDevFaceIntent()) {
+                Label("DevFace", systemImage: "apple.terminal")
+            }
+        }
+        .displayName("DevFace")
+        .description("DevFace'i açar.")
     }
 }
